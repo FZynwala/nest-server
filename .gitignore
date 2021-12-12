@@ -11,6 +11,9 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+#secrets
+/ci/vars.yml
+
 # OS
 .DS_Store
 
