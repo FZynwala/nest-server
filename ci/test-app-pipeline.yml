@@ -1,0 +1,44 @@
+resources:
+    - name: repo
+      type: git
+      source:
+          uri: https://FZynwala:((github_access_token))@github.com/FZynwala/nest-server.git
+
+jobs:
+    - name: deploy-test-app-job
+      plan:
+          - get: repo
+            trigger: true # tell Concourse to trigger this job when new versions are emitted
+          - task: deploy-test-app-task
+            config:
+                platform: linux
+                image_resource:
+                    type: registry-image
+                    source:
+                        repository: node
+                        tag: 14.17.0
+                inputs: # add the get step as an input to this task
+                    - name: repo
+                run: # read the file from the get step
+                    path: sh
+                    args:
+                        - -exc
+                        - |
+                            git config --global user.email "((github_user_email))"
+                            git config --global user.name "((github_user_name))"
+                            curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
+                            cat > ~/.netrc <<EOF
+                            machine git.heroku.com
+                              login ((HEROKU_EMAIL))
+                              password ((HEROKU_TOKEN))
+                            machine git.heroku.com
+                              login ((HEROKU_EMAIL))
+                              password ((HEROKU_TOKEN))
+                            EOF
+                            cat ~/.netrc
+                            HEROKU_API_KEY='((HEROKU_TOKEN))' heroku run ls --app nest-server-test-app
+                            cd repo
+                            ls
+                            yarn
+                            HEROKU_API_KEY='((HEROKU_TOKEN))' heroku git:remote -a nest-server-test-app
+                            git push heroku main
